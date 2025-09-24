@@ -7,6 +7,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from celery.result import AsyncResult
 from rest_framework.parsers import MultiPartParser, FormParser
+from .models import Quote, Part, QuoteLineItem
 
 from .models import CsvResult
 from .serializers import CsvResultSerializer
@@ -53,3 +54,35 @@ class TaskStatusView(APIView):
         if res.status == "FAILURE":
             payload["error"] = str(res.result)
         return Response(payload)
+
+class SeedDemoDataView(APIView):
+    """
+    Simple endpoint to seed demo Parts, Quotes, and LineItems.
+    Only for testing/demo purposes.
+    """
+
+    def post(self, request, *args, **kwargs):
+        # Avoid duplicate seeds by checking if already exists
+        if Part.objects.exists() or Quote.objects.exists():
+            return Response(
+                {"detail": "Database already seeded."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Create Parts
+        p1 = Part.objects.create(stock_code="AX123", description="Widget A")
+        p2 = Part.objects.create(stock_code="BX456", description="Widget B")
+
+        # Create Quotes
+        q1 = Quote.objects.create(name="AxiomR_1", status=Quote.Status.APPROVED)
+        q2 = Quote.objects.create(name="AxiomR_2", status=Quote.Status.APPROVED)
+
+        # Create LineItems
+        QuoteLineItem.objects.create(quote=q1, part=p1, quantity=5, price=10.50)
+        QuoteLineItem.objects.create(quote=q1, part=p2, quantity=2, price=25.00)
+        QuoteLineItem.objects.create(quote=q2, part=p1, quantity=1, price=12.00)
+
+        return Response(
+            {"detail": "Demo data seeded successfully."},
+            status=status.HTTP_201_CREATED,
+        )
