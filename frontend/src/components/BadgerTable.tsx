@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from 'lucide-react';
-import { CsvResult } from '../types';
+
+
+export interface CsvResult {
+  id: number;
+  stock_code: string;
+  number_quotes_found: number;
+  total_price: number;
+  created_at: string;
+  file_uploaded?: string;
+}
+
 
 interface BadgerTableProps {
   searchTerm: string;
@@ -140,7 +150,7 @@ const BadgerTable: React.FC<BadgerTableProps> = ({ searchTerm, refreshTrigger })
       </div>
     );
   }
-
+  console.log(data)
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-lg border border-gray-200">

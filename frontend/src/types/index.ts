@@ -14,7 +14,9 @@ export interface PaginatedResponse<T> {
   total?: number;
 }
 
+export type StatusType = 'success' | 'error' | 'info' | '';
+
 export interface UploadStatus {
-  type: 'success' | 'error' | 'info' | '';
+  type: StatusType;
   message: string;
 }

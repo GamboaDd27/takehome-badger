@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { CsvResult, PaginatedResponse } from '../types';
+import type { CsvResult, PaginatedResponse } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000';
 

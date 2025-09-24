@@ -1,6 +1,6 @@
 import React, { useState, DragEvent, ChangeEvent } from 'react';
 import { Upload, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
-import { UploadStatus } from '../types';
+import type { UploadStatus } from '../types';
 
 interface CSVUploaderProps {
   onUploadSuccess: () => void;
