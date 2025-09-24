@@ -16,7 +16,7 @@ services:
 
   backend:
     build:
-      context: ./backend      # important: points to backend/
+      context: ./backend
     command: ["./docker/entrypoint.sh"]
     env_file: ./backend/.env
     volumes:
