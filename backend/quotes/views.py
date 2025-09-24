@@ -47,8 +47,9 @@ class CsvResultListView(generics.ListAPIView):
 
 class TaskStatusView(APIView):
     def get(self, request, task_id, *args, **kwargs):
-        res = AsyncResult(task_id)
-        payload = {"task_id": task_id, "status": res.status}
+        task_id_str = str(task_id)
+        res = AsyncResult(task_id_str)
+        payload = {"task_id": task_id_str, "status": res.status}
         if res.status == "FAILURE":
             payload["error"] = str(res.result)
         return Response(payload)
