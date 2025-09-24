@@ -6,13 +6,14 @@ from rest_framework.views import APIView
 from rest_framework import generics, status
 from rest_framework.response import Response
 from celery.result import AsyncResult
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import CsvResult
 from .serializers import CsvResultSerializer
 from .tasks import process_csv
 
 class UploadCsvView(APIView):
-    parser_classes = []  # DRF will auto-handle multipart by default
+    parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, *args, **kwargs):
         file = request.FILES.get("file")
