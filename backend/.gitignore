@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+*.so
+
+# Virtualenv
+.venv/
+env/
+venv/
+ENV/
+*.egg-info/
+.eggs/
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# IDE / tooling
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Docker / Compose
+*.log
+*.pid
+*.seed
+*.bak
+*.tmp
+
+# local env
+.env
