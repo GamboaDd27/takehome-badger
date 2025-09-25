@@ -6,15 +6,22 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential curl netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
+# python deps
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+# project files
 COPY . .
 
+# make entrypoint executable
 RUN chmod +x docker/entrypoint.sh
 
 EXPOSE 8000
+
+# default cmd (can be overridden by docker-compose)
+CMD ["./docker/entrypoint.sh"]
