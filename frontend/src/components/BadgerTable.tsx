@@ -1,131 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Loader2,
+} from "lucide-react";
+import { getResults } from "../services/api"; 
 
-
+// If you already export these types elsewhere, import them instead of redefining.
 export interface CsvResult {
   id: number;
   stock_code: string;
   number_quotes_found: number;
-  total_price: number;
+  total_price: number | string; // DRF often sends Decimal as string
   created_at: string;
   file_uploaded?: string;
 }
-
 
 interface BadgerTableProps {
   searchTerm: string;
   refreshTrigger: number;
 }
 
-const BadgerTable: React.FC<BadgerTableProps> = ({ searchTerm, refreshTrigger }) => {
-  const [data, setData] = useState<CsvResult[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [itemsPerPage] = useState(10);
+const ITEMS_PER_PAGE = 20; // Match DRF PAGE_SIZE (settings.py). Change if you configured differently.
 
-  // Mock data for development
-  const generateMockData = (): CsvResult[] => {
-    return Array.from({ length: 50 }, (_, i) => ({
-      id: i + 1,
-      stock_code: `PART-${String(i + 1001).padStart(4, '0')}`,
-      number_quotes_found: Math.floor(Math.random() * 20),
-      total_price: parseFloat((Math.random() * 10000).toFixed(2)),
-      created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-    }));
-  };
+const BadgerTable: React.FC<BadgerTableProps> = ({
+  searchTerm,
+  refreshTrigger,
+}) => {
+  const [data, setData] = useState<CsvResult[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [error, setError] = useState<string | null>(null);
+
+  // Reset to page 1 when search changes or after a new successful upload
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, refreshTrigger]);
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, searchTerm, refreshTrigger]);
 
   const fetchData = async () => {
-    setLoading(true);
     try {
-      const response = await fetch(
-        `http://localhost:8000/results/?page=${currentPage}&limit=${itemsPerPage}&search=${searchTerm || ''}`
-      );
-      
-      if (response.ok) {
-        const result = await response.json();
-        setData(result.data || []);
-        setTotalPages(result.totalPages || 1);
-      } else {
-        // Use mock data on error
-        const mockData = generateMockData();
-        const filtered = searchTerm 
-          ? mockData.filter(item => 
-              item.stock_code.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-          : mockData;
-        
-        setData(filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage));
-        setTotalPages(Math.ceil(filtered.length / itemsPerPage));
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      // Use mock data on error
-      const mockData = generateMockData();
-      const filtered = searchTerm 
-        ? mockData.filter(item => 
-            item.stock_code.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-        : mockData;
-      
-      setData(filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage));
-      setTotalPages(Math.ceil(filtered.length / itemsPerPage));
+      setLoading(true);
+      setError(null);
+
+      // If your DRF uses PageNumberPagination with default settings,
+      // it accepts '?page=' but not '?page_size=' unless you enabled it.
+      const res = await getResults({
+        page: currentPage,
+        // limit: ITEMS_PER_PAGE, // only pass if your backend supports 'page_size' or custom param
+        search: searchTerm || undefined,
+      });
+
+      setData(res.results || []);
+      const pages = Math.max(1, Math.ceil((res.count || 0) / ITEMS_PER_PAGE));
+      setTotalPages(pages);
+    } catch (e) {
+      setError("Failed to load results.");
+      setData([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
-  };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const toNumber = (v: number | string) =>
+    typeof v === "number" ? v : Number(v);
+
+  const formatCurrency = (amount: number | string) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(toNumber(amount));
 
   const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
   const getPageNumbers = () => {
     const pages: number[] = [];
     const maxVisible = 5;
-    
+
     if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= maxVisible; i++) {
-          pages.push(i);
-        }
-      } else if (currentPage >= totalPages - 2) {
-        for (let i = totalPages - maxVisible + 1; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
-          pages.push(i);
-        }
-      }
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+      return pages;
     }
-    
+
+    if (currentPage <= 3) {
+      for (let i = 1; i <= maxVisible; i++) pages.push(i);
+      return pages;
+    }
+
+    if (currentPage >= totalPages - 2) {
+      for (let i = totalPages - maxVisible + 1; i <= totalPages; i++)
+        pages.push(i);
+      return pages;
+    }
+
+    for (let i = currentPage - 2; i <= currentPage + 2; i++) pages.push(i);
     return pages;
   };
 
@@ -138,19 +125,25 @@ const BadgerTable: React.FC<BadgerTableProps> = ({ searchTerm, refreshTrigger })
     );
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-600 text-lg">{error}</p>
+      </div>
+    );
+  }
+
   if (data.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 text-lg">No results found</p>
         {searchTerm && (
-          <p className="text-gray-400 mt-2">
-            Try adjusting your search criteria
-          </p>
+          <p className="text-gray-400 mt-2">Try adjusting your search.</p>
         )}
       </div>
     );
   }
-  console.log(data)
+
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -173,7 +166,10 @@ const BadgerTable: React.FC<BadgerTableProps> = ({ searchTerm, refreshTrigger })
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {data.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50 transition-colors duration-150">
+              <tr
+                key={row.id}
+                className="hover:bg-gray-50 transition-colors duration-150"
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="font-mono font-semibold text-purple-600">
                     {row.stock_code}
@@ -201,7 +197,7 @@ const BadgerTable: React.FC<BadgerTableProps> = ({ searchTerm, refreshTrigger })
         <div className="text-sm text-gray-500">
           Showing page {currentPage} of {totalPages}
         </div>
-        
+
         <div className="flex items-center space-x-1">
           <button
             onClick={() => goToPage(1)}
@@ -211,7 +207,7 @@ const BadgerTable: React.FC<BadgerTableProps> = ({ searchTerm, refreshTrigger })
           >
             <ChevronsLeft className="w-4 h-4" />
           </button>
-          
+
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
@@ -220,25 +216,23 @@ const BadgerTable: React.FC<BadgerTableProps> = ({ searchTerm, refreshTrigger })
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          
+
           <div className="flex items-center space-x-1">
             {getPageNumbers().map((pageNum) => (
               <button
                 key={pageNum}
                 onClick={() => goToPage(pageNum)}
-                className={`
-                  min-w-[40px] h-10 px-3 rounded-lg font-medium transition-all duration-200
-                  ${currentPage === pageNum 
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md' 
-                    : 'hover:bg-gray-100 text-gray-700'
-                  }
-                `}
+                className={`min-w-[40px] h-10 px-3 rounded-lg font-medium transition-all duration-200 ${
+                  currentPage === pageNum
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md"
+                    : "hover:bg-gray-100 text-gray-700"
+                }`}
               >
                 {pageNum}
               </button>
             ))}
           </div>
-          
+
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
@@ -247,7 +241,7 @@ const BadgerTable: React.FC<BadgerTableProps> = ({ searchTerm, refreshTrigger })
           >
             <ChevronRight className="w-4 h-4" />
           </button>
-          
+
           <button
             onClick={() => goToPage(totalPages)}
             disabled={currentPage === totalPages}

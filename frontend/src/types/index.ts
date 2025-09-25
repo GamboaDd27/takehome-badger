@@ -8,10 +8,10 @@ export interface CsvResult {
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
-  totalPages: number;
-  currentPage: number;
-  total?: number;
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
 
 export type StatusType = 'success' | 'error' | 'info' | '';

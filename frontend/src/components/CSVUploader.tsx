@@ -46,40 +46,58 @@ const CSVUploader: React.FC<CSVUploaderProps> = ({ onUploadSuccess }) => {
     }
   };
 
-  const handleUpload = async () => {
-    if (!file) {
-      setStatus({ type: 'error', message: 'Please select a file first' });
-      return;
-    }
+const handleUpload = async () => {
+  if (!file) {
+    setStatus({ type: 'error', message: 'Please select a file first' });
+    return;
+  }
 
-    setUploading(true);
-    setStatus({ type: 'info', message: 'Processing CSV...' });
+  setUploading(true);
+  setStatus({ type: 'info', message: 'Processing CSV...' });
 
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch('http://localhost:8000/upload-csv/', {
-        method: 'POST',
-        body: formData,
-      });
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
 
-      if (response.ok) {
-        setStatus({ type: 'success', message: 'File processed successfully!' });
-        onUploadSuccess();
+    const response = await fetch('http://localhost:8000/upload-csv/', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) throw new Error('Upload failed');
+    const data = await response.json();
+    const taskId = data.task_id;
+
+    // ⬅️ Poll until task finishes
+    const interval = setInterval(async () => {
+      const res = await fetch(`http://localhost:8000/tasks/${taskId}/`);
+      const statusData = await res.json();
+
+      if (statusData.status === 'SUCCESS' || statusData.status === 'FAILURE') {
+        clearInterval(interval);
+
+        if (statusData.status === 'SUCCESS') {
+          setStatus({ type: 'success', message: 'File processed successfully!' });
+          onUploadSuccess(); // ⬅️ NOW trigger table refresh
+        } else {
+          setStatus({ type: 'error', message: statusData.error || 'Processing failed.' });
+        }
+
+        // Reset UI a bit later
         setTimeout(() => {
           setFile(null);
           setStatus({ type: '', message: '' });
         }, 3000);
-      } else {
-        throw new Error('Upload failed');
       }
-    } catch (error) {
-      setStatus({ type: 'error', message: 'Upload failed. Please try again.' });
-    } finally {
-      setUploading(false);
-    }
-  };
+    }, 2000);
+  } catch (err) {
+    setStatus({ type: 'error', message: 'Upload failed. Please try again.' });
+  } finally {
+    setUploading(false);
+  }
+};
+
+
 
   return (
     <div className="max-w-2xl mx-auto">
