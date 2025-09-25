@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.log
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+.env
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Redis dump
+dump.rdb
+
+# Node / React
+node_modules/
+build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# VSCode / IDEs
+.vscode/
+.idea/
+*.swp
+
+# Docker
+*.pid
+*.sock
+docker/*.log
+
+# OS
+.DS_Store
+Thumbs.db

@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { getResults } from "../services/api"; 
 
-// If you already export these types elsewhere, import them instead of redefining.
 export interface CsvResult {
   id: number;
   stock_code: string;
@@ -23,7 +22,7 @@ interface BadgerTableProps {
   refreshTrigger: number;
 }
 
-const ITEMS_PER_PAGE = 20; // Match DRF PAGE_SIZE (settings.py). Change if you configured differently.
+const ITEMS_PER_PAGE = 20; // Match DRF PAGE_SIZE (settings.py)
 
 const BadgerTable: React.FC<BadgerTableProps> = ({
   searchTerm,
@@ -50,11 +49,9 @@ const BadgerTable: React.FC<BadgerTableProps> = ({
       setLoading(true);
       setError(null);
 
-      // If your DRF uses PageNumberPagination with default settings,
-      // it accepts '?page=' but not '?page_size=' unless you enabled it.
+   
       const res = await getResults({
         page: currentPage,
-        // limit: ITEMS_PER_PAGE, // only pass if your backend supports 'page_size' or custom param
         search: searchTerm || undefined,
       });
 

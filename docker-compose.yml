@@ -9,29 +9,45 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-partsbadger}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-partsbadger} -d ${DB_NAME:-partsbadger}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+    # redis-cli exits 0 on PONG, non-zero otherwise
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   backend:
-    build:
+    build: 
       context: ./backend
-    command: ["sh", "./docker/entrypoint.sh"]
-    env_file: ./backend/.env
+    command: ["sh", "./docker/entrypoint.sh"]    
+    env_file: ./backend/.env            
     volumes:
       - ./backend:/app
-    depends_on:
-      - db
-      - redis
     ports:
       - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1   # ⬅ optional: distinct DB
 
   celery:
-    build:
-      context: ./backend
+    build: ./backend
     command: ["celery", "-A", "config", "worker", "-l", "info"]
-    env_file: ./backend/.env
+    env_file: ./backend/.env            # ⬅ ensure celery sees DB settings too
     volumes:
       - ./backend:/app
     depends_on:

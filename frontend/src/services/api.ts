@@ -32,5 +32,9 @@ export const getTaskStatus = async (taskId: string): Promise<{ task_id: string; 
   return response.data;
 };
 
+export const seedDb = async () => {
+  return api.post('/seed-demo/');
+};
+
 
 export default api;

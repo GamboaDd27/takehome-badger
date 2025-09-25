@@ -12,7 +12,7 @@ ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
-    "rest_framework", "django_filters", "quotes","corsheaders"
+    "rest_framework", "django_filters", "quotes","corsheaders", 'channels'
 ]
 
 MIDDLEWARE = [
@@ -29,7 +29,7 @@ TEMPLATES = [{ "BACKEND":"django.template.backends.django.DjangoTemplates", "DIR
     "OPTIONS":{"context_processors":[
         "django.template.context_processors.debug","django.template.context_processors.request",
         "django.contrib.auth.context_processors.auth","django.contrib.messages.context_processors.messages"]}}]
-WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "backend.asgi.application"
 
 # DB: start with SQLite locally; swap to Postgres later/Docker
 DATABASES = {
@@ -74,3 +74,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",  #vite
 ]
+
+# Redis channel layer
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],  # docker-compose redis service
+        },
+    },
+}

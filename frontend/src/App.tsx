@@ -1,20 +1,26 @@
-import React, { useState } from 'react';
-import CSVUploader from './components/CSVUploader';
-import BadgerTable from './components/BadgerTable';
-import SearchFilter from './components/SearchFilter';
-import { FileSpreadsheet } from 'lucide-react';
+import React, { useState } from "react";
+import CSVUploader from "./components/CSVUploader";
+import BadgerTable from "./components/BadgerTable";
+import SearchFilter from "./components/SearchFilter";
+import { FileSpreadsheet } from "lucide-react";
+import { useWebSocket } from "./hooks/useWebSocket";
+import SeedButton from "./components/SeedButton";
 
 function App() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  const handleUploadSuccess = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
   };
+
+  // WebSocket connection
+  useWebSocket("ws://localhost:8000/ws/results/", (msg) => {
+    if (msg.status === "SUCCESS") {
+      console.log("Task completed:", msg);
+      setRefreshTrigger((prev) => prev + 1);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-purple-700">
@@ -32,13 +38,13 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 pb-8">
+      <main className="max-w-4xl mx-auto px-4 pb-8">
         {/* Upload Section */}
         <section className="bg-white rounded-xl shadow-xl p-6 mb-6">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
             Upload CSV File
           </h2>
-          <CSVUploader onUploadSuccess={handleUploadSuccess} />
+          <CSVUploader refreshTrigger={refreshTrigger} />
         </section>
 
         {/* Results Section */}
@@ -48,10 +54,12 @@ function App() {
               Analysis Results
             </h2>
             <SearchFilter onSearch={handleSearch} />
+            <SeedButton onSeed={() => setRefreshTrigger(prev => prev + 1)} />
+
           </div>
-          
-          <BadgerTable 
-            searchTerm={searchTerm} 
+
+          <BadgerTable
+            searchTerm={searchTerm}
             refreshTrigger={refreshTrigger}
           />
         </section>

@@ -7,3 +7,6 @@ psycopg2-binary>=2.9
 python-dotenv>=1.0
 gunicorn>=22.0
 django-cors-headers
+uvicorn[standard]==0.30.6
+channels==4.0.0
+channels-redis==4.1.0
