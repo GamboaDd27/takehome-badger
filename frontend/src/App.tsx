@@ -4,14 +4,11 @@ import BadgerTable from "./components/BadgerTable";
 import SearchFilter from "./components/SearchFilter";
 import { FileSpreadsheet } from "lucide-react";
 import { useWebSocket } from "./hooks/useWebSocket";
+import SeedButton from "./components/SeedButton";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  const handleUploadSuccess = () => {
-    setRefreshTrigger((prev) => prev + 1);
-  };
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -19,7 +16,7 @@ function App() {
 
   // WebSocket connection
   useWebSocket("ws://localhost:8000/ws/results/", (msg) => {
-    if (msg.type === "task.complete") {
+    if (msg.status === "SUCCESS") {
       console.log("Task completed:", msg);
       setRefreshTrigger((prev) => prev + 1);
     }
@@ -47,7 +44,7 @@ function App() {
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
             Upload CSV File
           </h2>
-          <CSVUploader onUploadSuccess={handleUploadSuccess} />
+          <CSVUploader refreshTrigger={refreshTrigger} />
         </section>
 
         {/* Results Section */}
@@ -57,6 +54,8 @@ function App() {
               Analysis Results
             </h2>
             <SearchFilter onSearch={handleSearch} />
+            <SeedButton onSeed={() => setRefreshTrigger(prev => prev + 1)} />
+
           </div>
 
           <BadgerTable

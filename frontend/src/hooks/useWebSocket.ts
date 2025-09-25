@@ -16,6 +16,7 @@ export function useWebSocket(
     };
 
     ws.onmessage = (event) => {
+        console.log("SOCKET MSG", event)
       try {
         const data = JSON.parse(event.data);
         onMessage(data);

@@ -14,22 +14,19 @@ from .models import CsvResult, QuoteLineItem
 
 
 def _ws_send(task_id: str, status: str, payload: dict | None = None):
-    """
-    Push a message to the WebSocket group for this task.
-    The consumer should define `task_update` to handle these.
-    """
     channel_layer = get_channel_layer()
     if not channel_layer:
         return
-    async_to_sync(channel_layer.group_send)(
-        f"task_{task_id}",
-        {
-            "type": "task.update",  # -> calls TaskConsumer.task_update
-            "status": status,
-            "task_id": str(task_id),
-            "result": payload or {},
-        },
-    )
+    event = {
+        "type": "task_update",
+        "status": status,
+        "task_id": str(task_id),
+        "result": payload or {},
+    }
+    # per-task group
+    async_to_sync(channel_layer.group_send)(f"task_{task_id}", event)
+    # global results group
+    async_to_sync(channel_layer.group_send)("results", event)
 
 
 @shared_task(bind=True)
@@ -99,7 +96,8 @@ def process_csv(self, relative_csv_path: str):
             "created": len(results),
             "codes": sorted(codes)[:25],  # preview up to 25 codes
         }
-        _ws_send(task_id, "SUCCESS", summary)
+        _ws_send(self.request.id, "SUCCESS", {"created": len(results)})
+
         return {"created": len(results)}
 
     except Exception as exc:
